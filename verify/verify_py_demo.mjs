@@ -1,15 +1,22 @@
 import { readFileSync, writeFileSync, copyFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 import { run } from "../src/malbolge-core.mjs";
 
-const src = readFileSync("C:/Users/progr/AppData/Local/Temp/opencode/py_out/py_print_full.mal", "latin1");
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const repoRoot = join(__dirname, "..");
+
+const tmpFile = process.env.MALBOLGE_TRANSLATE_INPUT
+  || join(tmpdir(), "py_print_full.mal");
+const src = readFileSync(tmpFile, "latin1");
 const r = run(src);
 const ok = r.output === 'print("hola")' && r.status === "HALTED";
 console.log(`JS_CORE: ${r.status}/${r.steps} match=${ok}`);
 
 if (ok) {
-  copyFileSync("C:/Users/progr/AppData/Local/Temp/opencode/py_out/py_print_full.mal",
-               "C:/Development/ISyCo Git/malbolge-translate/examples/python_print.malbolge");
-  writeFileSync("C:/Development/ISyCo Git/malbolge-translate/examples/python_print_salida.txt",
+  copyFileSync(tmpFile, join(repoRoot, "examples", "python_print.malbolge"));
+  writeFileSync(join(repoRoot, "examples", "python_print_salida.txt"),
                 r.output, "latin1");
   console.log("guardado en examples/");
 }
