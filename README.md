@@ -48,7 +48,7 @@ node verify\vectors.mjs
 node verify\test_freezes.mjs
 ```
 
-La suite no depende de rutas privadas de `C:\Development`.
+La suite no depende de rutas absolutas del host.
 
 ## Alcance honesto
 

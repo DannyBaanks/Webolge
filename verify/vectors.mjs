@@ -1,4 +1,4 @@
-// Suite portable: no depende de rutas privadas de C:\\Development.
+// Suite portable: no depende de rutas absolutas del host.
 import { readFileSync } from "node:fs";
 import { run } from "../src/malbolge-core.mjs";
 import { generateToolkit } from "../src/toolkit-gen.mjs";

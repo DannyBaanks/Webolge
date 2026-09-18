@@ -10,8 +10,11 @@ try {
   console.log(`GEN_CLIENTE ok=${ok} celdas=${prog.length} pasos=${r.steps} t=${Date.now() - t0}ms`);
   if (ok) {
     const fs = await import("node:fs");
-    fs.writeFileSync("C:\\Users\\progr\\AppData\\Local\\Temp\\opencode\\py_print.mal", prog, "latin1");
-    console.log("GUARDADO py_print.mal");
+    const os = await import("node:os");
+    const path = await import("node:path");
+    const out = path.join(os.tmpdir(), "py_print.mal");
+    fs.writeFileSync(out, prog, "latin1");
+    console.log(`GUARDADO ${out}`);
   }
   process.exit(ok ? 0 : 2);
 } catch (e) {
