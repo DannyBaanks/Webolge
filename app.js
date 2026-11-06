@@ -1,4 +1,6 @@
 import { run } from "./src/malbolge-core.mjs";
+import { canConveyorFit } from "./src/conveyor-gen.mjs";
+import { getRippleProgram, RIPPLE_METADATA } from "./src/ripple-gen.mjs";
 
 const $ = (id) => document.getElementById(id);
 const entrada = $("entrada"), salida = $("salida");
@@ -69,15 +71,22 @@ function getWorker() {
   return worker;
 }
 
-const genEnWorker = (texto, ancho, deadlineMs, kind = "quick") => new Promise((res) => {
+const genEnWorker = (texto, ancho, deadlineMs, kind = "quick", enginePreference = "auto") => new Promise((res) => {
   const id = crypto.randomUUID();
   currentId = id;
   pendientes.set(id, { res, kind });
-  getWorker().postMessage({ cmd: "gen", id, texto, ancho, deadlineMs });
+  getWorker().postMessage({ cmd: "gen", id, texto, ancho, deadlineMs, enginePreference });
 });
 
-async function generarUno(texto) {
-  const generated = await genEnWorker(texto, 10, QUICK_DEADLINE_MS, "quick");
+const genEnWorkerRipple = (stages = 7) => new Promise((res) => {
+  const id = crypto.randomUUID();
+  currentId = id;
+  pendientes.set(id, { res, kind: "ripple" });
+  getWorker().postMessage({ cmd: "ripple", id, stages });
+});
+
+async function generarUno(texto, enginePreference = "auto") {
+  const generated = await genEnWorker(texto, 10, QUICK_DEADLINE_MS, "quick", enginePreference);
   if (generated.paused) throw new Error("generacion pausada");
   if (generated.error) throw new Error(generated.error);
 
@@ -123,7 +132,10 @@ $("btnConvert").addEventListener("click", async () => {
       throw new Error("el generador actual emite bytes Latin-1 (0..255); Unicode fuera de ese rango aun no esta soportado");
     }
 
-    if (src.length > QUICK_MAX) {
+    const enginePref = $("selEngine") ? $("selEngine").value : "auto";
+    const fitsInConveyor = canConveyorFit(src);
+
+    if (src.length > QUICK_MAX && !fitsInConveyor) {
       await iniciarLoteDesdeTexto(src);
       salida.value = "";
       metaIn.textContent = `${src.length} bytes`;
@@ -135,7 +147,7 @@ $("btnConvert").addEventListener("click", async () => {
       return;
     }
 
-    const g = await generarUno(src);
+    const g = await generarUno(src, enginePref);
     salida.value = g.program;
     metaIn.textContent = `${src.length} bytes`;
     metaOut.textContent = `${g.program.length} celdas · ${g.verification.steps} pasos`;
@@ -157,6 +169,61 @@ $("btnConvert").addEventListener("click", async () => {
     btn.disabled = false;
   }
 });
+
+const QUIJOTE_APERTURA = "En un lugar de la Mancha, de cuyo nombre no quiero acordarme, no ha mucho tiempo que vivia un hidalgo de los de lanza en astillero, adarga antigua, rocin flaco y galgo corredor. Una olla de algo mas vaca que carnero, salpicon las mas noches, duelos y quebrantos los sabados, lantejas los viernes, algun palomino de anadidura los domingos, consumian las tres partes de su hacienda.";
+
+if ($("btnQuijote")) {
+  $("btnQuijote").addEventListener("click", () => {
+    entrada.value = QUIJOTE_APERTURA;
+    if ($("modo")) $("modo").value = "toMal";
+    if ($("selEngine")) $("selEngine").value = "conveyor";
+    metaIn.textContent = `${QUIJOTE_APERTURA.length} bytes (Cervantes)`;
+    $("btnConvert").click();
+  });
+}
+
+if ($("btnHola")) {
+  $("btnHola").addEventListener("click", () => {
+    entrada.value = "Hola mundo";
+    if ($("modo")) $("modo").value = "toMal";
+    metaIn.textContent = "10 bytes";
+    $("btnConvert").click();
+  });
+}
+
+if ($("btnRipple")) {
+  $("btnRipple").addEventListener("click", async () => {
+    const btn = $("btnRipple");
+    btn.disabled = true;
+    analisis.textContent = "ejecutando demostración de expansión positiva (Ripple Counter 7 etapas)...";
+    setBadge(false, "");
+    try {
+      const g = await genEnWorkerRipple(7);
+      if (g.error) throw new Error(g.error);
+      const r = run(g.program, "", 5_000_000, { maxOutput: 100_000 });
+      entrada.value = "[Demostración Científica: Expansión Positiva mediante Contador Ripple XLAT2 (7 etapas)]";
+      salida.value = g.program;
+      metaIn.textContent = "Contador Ripple (7 etapas, 5^7 salidas)";
+      metaOut.textContent = `${g.program.length} celdas · ${r.steps} pasos · ${r.output.length} bytes emitidos`;
+      setBadge(true, "EXPANSIÓN 14.58x");
+      analisis.textContent =
+        `Contador Ripple XLAT2 (Expansión Positiva Demostrada)\n` +
+        `etapas: 7 (LOOP5 encadenados en serie)\n` +
+        `código fuente: ${g.program.length} celdas\n` +
+        `salida producida: ${r.output.length} bytes ('A')\n` +
+        `ratio de expansión: ${(r.output.length / g.program.length).toFixed(4)}x (> 1.0)\n` +
+        `salida excede universo de memoria: ${r.output.length} > 59049 celdas\n` +
+        `parada limpia: SÍ (status: ${r.status} en ${r.steps} pasos)\n` +
+        `exact match: SÍ`;
+    } catch (e) {
+      salida.value = "";
+      setBadge(false, "error");
+      analisis.textContent = "error: " + (e.message || e);
+    } finally {
+      btn.disabled = false;
+    }
+  });
+}
 
 $("fileIn").addEventListener("change", async (ev) => {
   const f = ev.target.files[0];

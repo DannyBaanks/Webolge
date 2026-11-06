@@ -1,6 +1,8 @@
 // gen-worker.mjs — el generador sufre en su propio hilo; la UI ni se entera.
 import { generateToolkit, ToolkitPaused, ToolkitTimeout } from "./toolkit-gen.mjs";
 import { generar, GenPaused, GenTimeout } from "./meowbolge-gen.mjs";
+import { synthesizeConveyor, canConveyorFit } from "./conveyor-gen.mjs";
+import { getRippleProgram } from "./ripple-gen.mjs";
 
 const pauseFlags = new Set();
 
@@ -11,9 +13,21 @@ if (typeof self !== "undefined" && typeof self.postMessage === "function") {
       pauseFlags.add(d.id);
       return;
     }
+
+    if (d.cmd === "ripple") {
+      const { id, stages = 7 } = d;
+      try {
+        const res = getRippleProgram(stages);
+        self.postMessage({ type: "done", id, program: res.program, engine: `xlat2-ripple-${stages}` });
+      } catch (err) {
+        self.postMessage({ type: "error", id, message: String(err.message || err) });
+      }
+      return;
+    }
+
     if (d.cmd !== "gen") return;
 
-    const { id, texto, ancho, deadlineMs = 20_000 } = d;
+    const { id, texto, ancho, deadlineMs = 20_000, enginePreference = "auto" } = d;
     const beat = setInterval(() => self.postMessage({ type: "beat", id }), 400);
     const started = Date.now();
 
@@ -28,11 +42,25 @@ if (typeof self !== "undefined" && typeof self.postMessage === "function") {
 
     try {
       let program;
-      let engine = "toolkit-bfs";
+      let engine = "autobolge-conveyor";
 
+      // 1. Fast constructive conveyor path (O(N) algebraic synthesis, ~2-5 ms)
+      if ((enginePreference === "conveyor" || enginePreference === "auto") && canConveyorFit(texto)) {
+        try {
+          const cRes = synthesizeConveyor(texto, { verify: true });
+          program = cRes.program;
+          engine = "autobolge-conveyor";
+          self.postMessage({ type: "done", id, program, engine });
+          return;
+        } catch (e) {
+          if (enginePreference === "conveyor") throw e;
+          // Fall through to toolkit search if conveyor layout failed
+        }
+      }
+
+      engine = "toolkit-bfs";
       try {
-        // Primary generator: fast snapshot/BFS path. It turns "hola" into one
-        // verified Malbolge program instead of merely reporting a safe timeout.
+        // Primary search generator: fast snapshot/BFS path.
         const primaryBudget = Math.max(1000, Math.floor(deadlineMs * 0.8));
         program = generateToolkit(texto, {
           deadlineMs: primaryBudget,

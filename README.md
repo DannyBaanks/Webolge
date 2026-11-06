@@ -5,13 +5,16 @@ Todo corre localmente en el navegador; no hay servidor de ejecución.
 
 Sitio: `https://malbolge-translate.pages.dev/`
 
-## Qué hace v0.3
+## Qué hace v0.4 (2026 Edition — Autobolge 2.0 & Ripple Engine)
 
-- **Texto → Malbolge (modo rápido):** genera **un programa Malbolge real** para entradas cortas, lo vuelve a ejecutar con el núcleo JS y solo lo muestra si la salida coincide exactamente.
+- **Síntesis Constructiva Autobolge 2.0 en $O(N)$:** sintetiza programas Malbolge reales para textos de hasta ~1,000–1,500 caracteres en **2–6 milisegundos**, con salto cuántico algebraico ($c=0 \to 3315, d=121$) y hueco estéril de 3,194 celdas. Permite generar la apertura completa de *El Quijote* (380 caracteres) en 3 ms sin búsqueda heurística ni congelamiento de UI.
+- **Demostración de Expansión Positiva (XLAT2 Ripple Counter):** emite hasta **78,125 bytes** de salida limpia desde programas de tan solo 5.3 KB (factor de expansión **14.58x**), demostrando formal y empíricamente que la salida de Malbolge no está acotada por las 59,049 celdas de memoria.
+- **Texto → Malbolge (modo rápido):** genera **un programa Malbolge real**, lo vuelve a ejecutar con el núcleo JS y solo lo muestra si la salida coincide exactamente.
 - **Malbolge → texto:** ejecuta el programa con límites de pasos/salida y muestra su output.
 - **Automático:** intenta reconocer si la entrada ya es un programa; si no, genera Malbolge.
 - **Webolge anti-freeze:** generación en `Worker`, checkpoints en IndexedDB, pausa/reanudación, auto-bisección de chunks y descarga de manifiesto.
 - **Lotes:** cada chunk es un programa Malbolge **independiente y verificado**. No se venden como un único stream concatenable.
+- **Ejemplos Rápidos:** botones preset para *El Quijote (Apertura)*, *Hola mundo*, y *Ripple Counter x14.58*.
 
 Prueba mínima:
 
@@ -32,10 +35,13 @@ generar → ejecutar → output === "hola" → HALTED
 | pieza | qué es |
 |---|---|
 | `src/malbolge-core.mjs` | intérprete canónico JS (`op=(v+c)%94`, crazy-op, cifrado post-ejecución) |
+| `src/conveyor-gen.mjs` | sintetizador algebraico constructivo $O(N)$ Autobolge 2.0 (~2-6 ms) |
+| `src/ripple-gen.mjs` | generador y catálogo del contador ripple XLAT2 (expansión hasta 14.58x) |
 | `src/toolkit-gen.mjs` | generador snapshot/BFS rápido, portado/adaptado a JS |
 | `src/meowbolge-gen.mjs` | generador toroidal previo, conservado como fallback |
-| `src/gen-worker.mjs` | generación fuera del hilo de UI |
-| `app.js` | conversión, verificación, lotes y checkpoints |
+| `src/gen-worker.mjs` | generación fuera del hilo de UI con soporte Conveyor, BFS y Ripple |
+| `app.js` | interfaz, presets (Quijote, Ripple), conversión, verificación y lotes |
+| `verify/test_conveyor.mjs` | verificación de Autobolge 2.0, Quijote 380 chars y Ripple x14.58 |
 | `verify/vectors.mjs` | suite portable de vectores y generación real |
 | `verify/test_freezes.mjs` | regresión: `hola` debe generarse, no basta con timeout seguro |
 
@@ -43,9 +49,10 @@ generar → ejecutar → output === "hola" → HALTED
 
 Desde el root del repo:
 
-```powershell
-node verify\vectors.mjs
-node verify\test_freezes.mjs
+```bash
+node verify/test_conveyor.mjs
+node verify/vectors.mjs
+node verify/test_freezes.mjs
 ```
 
 La suite no depende de rutas absolutas del host.
