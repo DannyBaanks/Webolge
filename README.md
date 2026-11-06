@@ -1,11 +1,15 @@
-# malbolge·translate / Webolge
+# Webolge v2.0 (malbolge·translate) — Google Translate para Malbolge en el Navegador
+
+[![Version](https://img.shields.io/badge/version-2.0-blue.svg)](https://github.com/DannyBaanks/Webolge)
+[![Cloudflare Pages](https://img.shields.io/badge/deployment-Cloudflare%20Pages-orange.svg)](https://malbolge-translate.pages.dev/)
+[![Autobolge 2.0](https://img.shields.io/badge/synthesis-Autobolge%202.0%20O(N)-brightgreen.svg)]()
 
 Google Translate, pero de **Malbolge**: texto humano ⇄ programa ejecutable.
 Todo corre localmente en el navegador; no hay servidor de ejecución.
 
 Sitio: `https://malbolge-translate.pages.dev/`
 
-## Qué hace v0.4 (2026 Edition — Autobolge 2.0 & Ripple Engine)
+## Qué hace v2.0 (2026 Edition — Autobolge 2.0 & Ripple Engine)
 
 - **Síntesis Constructiva Autobolge 2.0 en $O(N)$:** sintetiza programas Malbolge reales para textos de hasta ~1,000–1,500 caracteres en **2–6 milisegundos**, con salto cuántico algebraico ($c=0 \to 3315, d=121$) y hueco estéril de 3,194 celdas. Permite generar la apertura completa de *El Quijote* (380 caracteres) en 3 ms sin búsqueda heurística ni congelamiento de UI.
 - **Demostración de Expansión Positiva (XLAT2 Ripple Counter):** emite hasta **78,125 bytes** de salida limpia desde programas de tan solo 5.3 KB (factor de expansión **14.58x**), demostrando formal y empíricamente que la salida de Malbolge no está acotada por las 59,049 celdas de memoria.
